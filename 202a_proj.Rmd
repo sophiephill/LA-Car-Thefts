@@ -1,0 +1,67 @@
+---
+title: "Where to Avoid Parking Your Car in Los Angeles"
+author: Sophie Phillips
+output: pdf_document
+---
+
+## Introduction
+
+Whenever I park my car on an unfamilar, dark street corner, it makes me pause. As a new resident of Los Angeles, I'm not sure where it's safe to leave my car. I decided to examine LA crime data to better understand which areas are targeted by car thieves. In particular, I was curious whether neighborhood characteristics inform their theft rates.
+
+## Data Description
+
+  I obtained data on crimes reported to the LA Police Department on the LA Open Data website ^[Crime Data: https://data.lacity.org/Public-Safety/Crime-Data-from-2020-to-Present/2nrs-mtv8]. I examined crimes occurring from January 1, 2020 to November 15, 2021. I defined motor vehicle thefts using Uniform Crime Reporting codes 510, 520, 330, 331, 410, 420, and 421, which include attempted or successful incidents of burglary or theft from vehicles or stolen vehicles. 
+
+  This dataset certainly undercounts the total number of vehicle thefts during this time period as not every crime is reported. I suspect people are more likely to report a stolen vehicle to the police than a smashed car window, so burglaries from vehicles are likely especially undercounted. Ideally, thefts would be missing at random from the dataset, but it is possible that people in some neighborhoods are more likely to call the police when their car window is smashed than in others. As we examine trends in incidence, it is important to consider that thefts in some areas may be undercounted due to this reporting bias.
+
+## Exploratory Data Analysis
+
+  Among the 349,024 crimes reported to LAPD during the study period, 11% and 14% related to car thefts and burglary from vehicles, respectively. I am suspicious by how similar these proportions are, as at least anecdotally, car break-ins are more common than vehicle thefts. As mentioned above, I suspect there were more occurrences of burglary from vehicle that were not reported. Even with this undercount, in total, car-related thefts represent a quarter of the reported crimes over the past year. 
+
+  Examining temporal trends (Fig. 1), we see car thefts are more common between 5 to 10 p.m., but there is almost no variation between months. This latter point surprised me, as other types of crime exhibit clear seasonal trends, such as homicides occurring more frequently in summer months. (Note that the apparent decrease in cases in November and December is due to incomplete 2021 data, as all other months had data reported for both 2020 and 2021.)
+
+## Predicting thefts using neighborhood characteristics
+
+  I typically assume my car is safer when I park in wealthier neighborhoods. Is this assumption correct? I investigated which neighborhood characteristics inform the number of car thefts it experiences. I defined neighborhoods using Census tracts, which provide a granular spatial unit that can better capture variation in city streets than larger spatial aggregations. I obtained data on tract median income, median home value, population size, and the proportion of the population that rent their housing units from the 2019 American Community Survey 5-year estimates. While the ACS is based on a sample rather than census of households, I avoided variables with many subcategories to obtain more stable estimates. Some tracts had missing home value or income estimates. I interpolated these values using the average among the six nearest tracts, using the distance between tract centroids to define the nearest neighbors. To measure the business activity in a neighborhood, I obtained data on active businesses registered with the city from the LA Open Data website ^[Business Data: https://data.lacity.org/Administration-Finance/Listing-of-Active-Businesses/6rrh-rzua/data] and counted the number of businesses per tract. I dropped 21,342 businesses with missing location data, representing 3.9% of the dataset. Rather than investigating each of these missing data points, I decided to assume that there isn't a regional trend determining which businesses have missing location data.
+
+  Using a generalized additive model (GAM), I modelled the number of reported car thefts within a census tract as a function of the tract's active business count, population size, median income, median home value, and renter proportion. I included this last variable to measure whether the neighborhood was primarily single family homes. I favored a simple model as many demographic variables are highly correlated (e.g. race and income). 
+
+  The model was surprisingly ineffective (Table 1). With an adjusted $R^2$ of $0.47$, the selected features were barely able to explain the pattern in neighborhood thefts. While all of the effects were significant at the 1% level, this significance is likely due to overfitting. The partial dependence plots (Fig. 2) are more revealing. Demographic features proved to be weak predictors: the number of thefts very slightly increases with the proportion of renters, and neighborhoods with lower median home values have a wider spread in thefts. I was especially surprised by the lack of association with population size, which informs how many cars are parked in the neighborhood. These results suggest that the characteristics of the residents do not determine wheher a neighborhood is targeted by car thieves. Rather, what matters is if it's a downtown area, as evidenced by the high F score for neighborhood business count.
+
+  In summary, residential zones are safer than commercial zones, but it seems to make little difference whether you park along a street inhabited by movie stars or grad students.
+
+## Mapping the distribution of thefts
+
+  To visualize the spatial distribution of car thefts, I divided Los Angeles into gridded cells of area 1.06 squared miles. I used two dimensional kernel density estimation to estimate the density of car thefts within each cell. I implemented this code in C using bandwidth $\sqrt{\text{nrd}(\text{latitude})^2 + \text{nrd}(\text{longitude})^2}$, where $\text{nrd}$ is Scott(1992)'s rule of thumb.
+
+  From the map, we see the highest density of car thefts occurring in the neighborhoods around Downtown, Boyle Heights, and Koreatown (Fig. 3). This aligns with the conclusions I drew from the GAM model, as these areas are highly commercial. In contrast, the distribution of bike thefts is bimodal, with Venice experiencing as many bike thefts as Downtown (Fig. 4).
+
+## Future work
+
+  The analysis I conducted achieved my goal of determining broad trends in the distribution of car thefts in Los Angeles. I was surprised to find that a neighborhood's wealth is a poor predictor of the number of car thefts it experiences, but I was unsurprised to find that car thefts are most concentrated in commercial areas.
+
+  Given unlimited time, I would attempt to model car thefts using a self-exciting point process model, similar to the methods in Mohler (2011)^[Mohler, G.O., Short, M.B., Brantingham, P.J., Schoenberg, F.P., and Tita, G.E. (2011). Self-exciting point process modeling of crime. JASA , 106(493), 100-108.]. Such a model would better forecast where car thefts will occur, as my analysis found car thefts are highly clustered. With a better predictive model, one could answer deeper questions, such as how soon after a street is targeted should one expect another theft to occur, or whether car thefts significantly increased from expected during COVID-19. For now, I will research the public transit options to Downtown LA so I don't have to bring my car there.
+
+
+
+
+
+
+
+
+
+
+
+## Appendix
+
+
+![Temporal trends in car thefts](~/Desktop/stat202a/proj/figures/temporal.png)
+
+![Estimated number of car thefts per neighborhood feature](~/Desktop/stat202a/proj/figures/pdep.jpg)
+
+![KDE of car thefts, 2020-2021](~/Desktop/stat202a/proj/figures/carkde.png)
+
+![KDE of bike thefts, 2020-2021](~/Desktop/stat202a/proj/figures/bikekde.png){width=500px}
+
+Table 1
+![](~/Desktop/stat202a/proj/figures/gam.png)
